@@ -22,6 +22,10 @@
 	<true/>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Please authenticate yourself to unlock your places</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Allow app to access your location to view sites near you</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Allow app to access your location to view sites near you</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

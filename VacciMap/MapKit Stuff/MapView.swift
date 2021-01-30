@@ -11,6 +11,7 @@ import MapKit
 
 struct MapView: UIViewRepresentable {
     typealias Context = UIViewRepresentableContext<Self>
+    @StateObject private var pinColors = PinColorsDictionary.shared
 
     @Binding var centerCoordinate: CLLocationCoordinate2D
     
@@ -20,6 +21,8 @@ struct MapView: UIViewRepresentable {
     ///Determines whether we are showing details for that place
     @Binding var showingPlaceDetails: Bool
     
+    var currentLocation: CLLocationCoordinate2D?
+    
     ///A list of all locations of interest
     var annotations: [MKPointAnnotation]
 
@@ -27,11 +30,15 @@ struct MapView: UIViewRepresentable {
         let mapView = MKMapView()
         mapView.delegate = context.coordinator
         
-        let annotation = MKPointAnnotation()
-            annotation.title = "London"
-            annotation.subtitle = "Capital of England"
-            annotation.coordinate = CLLocationCoordinate2D(latitude: 51.5, longitude: 0.13)
-            mapView.addAnnotation(annotation)
+        print("My location might be nil")
+
+        //Zoom to user location
+        if currentLocation != nil {
+            print("My location is \(currentLocation!)")
+            let viewRegion = MKCoordinateRegion(center: currentLocation!, latitudinalMeters: 3000, longitudinalMeters: 3000)
+            mapView.setRegion(viewRegion, animated: false)
+            mapView.showsUserLocation = true
+        }
 
         return mapView
     }
@@ -50,6 +57,7 @@ struct MapView: UIViewRepresentable {
 }
 
 class Coordinator: NSObject, MKMapViewDelegate {
+    @ObservedObject private var pinColors = PinColorsDictionary.shared
     var parent: MapView
 
     init(_ parent: MapView) {
@@ -66,27 +74,31 @@ class Coordinator: NSObject, MKMapViewDelegate {
     ///Animation when pin is tapped
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
         // this is our unique identifier for view reuse
-           let identifier = "Placemark"
+        let identifier = "Placemark"
 
-           // attempt to find a cell we can recycle
-           var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
+        // attempt to find a cell we can recycle
+        var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as! MKPinAnnotationView?
+            
+        if annotationView == nil {
+            // we didn't find one; make a new one
+            annotationView = MKPinAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+            annotationView?.pinTintColor = pinColors.dictionary[annotation.identifierString()] //get the color to use
 
-           if annotationView == nil {
-               // we didn't find one; make a new one
-               annotationView = MKPinAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+            // allow this to show pop up information
+            annotationView?.canShowCallout = true
+            
 
-               // allow this to show pop up information
-               annotationView?.canShowCallout = true
+            // attach an information button to the view
+            annotationView?.rightCalloutAccessoryView = UIButton(type: .detailDisclosure)
+        } else {
+            // we have a view to reuse, so give it the new annotation
+            annotationView?.annotation = annotation
+            annotationView?.pinTintColor = pinColors.dictionary[annotation.identifierString()] //get the color to use
 
-               // attach an information button to the view
-               annotationView?.rightCalloutAccessoryView = UIButton(type: .detailDisclosure)
-           } else {
-               // we have a view to reuse, so give it the new annotation
-               annotationView?.annotation = annotation
-           }
+        }
 
-           // whether it's a new view or a recycled one, send it back
-           return annotationView
+        // whether it's a new view or a recycled one, send it back
+        return annotationView
     }
     
     func mapView(_ mapView: MKMapView, annotationView view: MKAnnotationView, calloutAccessoryControlTapped control: UIControl) {

@@ -21,6 +21,12 @@ struct EditView: View {
     ///Set to true if the site is a vaccination site, not a testing site
     @State private var isVaccinationSite = false
     
+    ///Text to display whether this is a testing or vaccination site. Set to either "Testing Site" or "Vaccination Site"
+    @State private var siteType = "Testing Site (tap to change)"
+    
+    ///Set to false if there are no vaccines or tests available
+    @State private var stuffAvailable = true
+    
     @State private var locationType = ""
     
     ///The wait time at the location
@@ -46,48 +52,64 @@ struct EditView: View {
             Form {
                 if shouldEditSite { //only allow editing if I specified that I'm editing the location details
                     Section {
-                        Toggle(isOn: $isVaccinationSite, label: {
-                            isVaccinationSite ? "Vaccination Site".toText() : "Testing Site".toText()
-                        }).toggleStyle(SwitchToggleStyle(tint: .blue)).onChange(of: isVaccinationSite, perform: { isVaccinationSite in
+                        Menu {
+                            Button("Testing Site"){ isVaccinationSite = false; siteType = "Testing Site" }
+                            Button("Vaccination Site"){ isVaccinationSite = true; siteType = "Vaccination Site" }
+                        } label: {
+                            Text(siteType)
+                        }
+                        .onChange(of: isVaccinationSite, perform: { isVaccinationSite in
                             locationType = isVaccinationSite ? LocationTypes.vaccinationSite.rawValue : LocationTypes.testingSite.rawValue
                             placemark.wrappedTitle = isVaccinationSite ? "Vaccination Site" : "Testing Site"
                             
                         })
+                        
+                        Toggle(isOn: $stuffAvailable, label: {
+                            if isVaccinationSite {
+                                stuffAvailable ? "Vaccines Available".toText() : "Vaccines Not Available".toText()
+                            }
+                            else {
+                                stuffAvailable ? "Tests Available".toText() : "Tests Not Available".toText()
+                            }
+                        })
                                                 
                         TextField("Wait Time (Minutes)", text: $locationWaitTime).keyboardType(.numberPad).onChange(of: locationWaitTime){ newTime in
-                            placemark.wrappedSubtitle = newTime + " minute wait"
+                            placemark.wrappedSubtitle = !newTime.isEmpty ? newTime + " minute wait" : "Unknown wait time"
                         }
                         
                         TextField("Additional Comments", text: $additionalComments)
                     }
-                }
+                } //end if shouldEditSite
                 
-                //Handle what to display when the page loads or fails to load
-                Section(header: Text("Nearby…")) {
-                    if loadingState == .loaded {
-                        List(pages, id: \.pageid) { page in
-                            VStack {
-                                Text(page.title)
-                                    .font(.headline)
-                                + Text(": ") +
-                                    Text(page.description)
-                                    .italic()
-                            }.onTapGesture {
-                                //search Google for the location
-                                var urlString: String = page.title
-                                urlString = urlString.replacingOccurrences(of: " ", with: "+")
-                                if let url = URL(string: "http://www.google.com/search?q=\(urlString)") { UIApplication.shared.open(url) }
+                else {
+                //Show wikipedia data for nearby attractions
+                    Section(header: Text("Nearby…")) {
+                        if loadingState == .loaded {
+                            List(pages, id: \.pageid) { page in
+                                VStack {
+                                    Text(page.title)
+                                        .font(.headline)
+                                    + Text(": ") +
+                                        Text(page.description)
+                                        .italic()
+                                }.onTapGesture {
+                                    //search Google for the location
+                                    var urlString: String = page.title
+                                    urlString = urlString.replacingOccurrences(of: " ", with: "+")
+                                    if let url = URL(string: "http://www.google.com/search?q=\(urlString)") { UIApplication.shared.open(url) }
+                                }
                             }
+                        } else if loadingState == .loading {
+                            Text("Loading…")
+                        } else {
+                            Text("Please try again later.")
                         }
-                    } else if loadingState == .loading {
-                        Text("Loading…")
-                    } else {
-                        Text("Please try again later.")
                     }
                 }
             }
-            .navigationBarTitle(shouldEditSite ? "Edit place" : "Nearby Attractions")
+            .navigationBarTitle(shouldEditSite ? "Site Details" : "Nearby Attractions")
             .navigationBarItems(trailing: Button("Done") {
+                uploadDataToDatabase()
                 self.presentationMode.wrappedValue.dismiss()
             })
             
@@ -98,12 +120,17 @@ struct EditView: View {
                 let title = placemark.wrappedTitle
                 let subtitle = placemark.wrappedSubtitle
                 isVaccinationSite = title == "Vaccination Site" //set the toggle to the correct location
+                if title == "Vaccination Site" || title == "Testing Site" { siteType = title } //set the menu display text
                 locationType = isVaccinationSite ? LocationTypes.vaccinationSite.rawValue : LocationTypes.testingSite.rawValue
                 placemark.wrappedTitle = isVaccinationSite ? "Vaccination Site" : "Testing Site"
                 
-                if let waitTime = subtitle.split(separator: " ").first{ locationWaitTime = String(waitTime) }
+                if let waitTime = subtitle.split(separator: " ").first{
+                    if waitTime.lowercased() != "unknown" { locationWaitTime = String(waitTime) }
+                }
                 
-            }.onDisappear { uploadDataToDatabase() }
+                stuffAvailable = placemark.wrappedHint == "true"
+                
+            }
         }
     }
     
@@ -143,15 +170,12 @@ struct EditView: View {
     
     ///Saves the testing or vaccination site to the database so other users can see it
     func uploadDataToDatabase(){
-        if locationWaitTime.isEmpty { return } //don't upload any data if the wait time is empty
-        
-        //Round latitude and longitude to the thousandth of a degree, since no two users will place the pin at exactly the same site.
-        let latitude =  round(Double(placemark.coordinate.latitude)*1000)/1000
-        let longitude = round(Double(placemark.coordinate.longitude)*1000)/1000
+        let latitude =  Double(placemark.coordinate.latitude)
+        let longitude = Double(placemark.coordinate.longitude)
         
         //Upload to database as a string "SOME_LATITUDE SOME_LONGITUDE", so latitude is string.first and longitude is string.last
         let coordinateString = "\(latitude) \(longitude)"
-        let infoDict: [String: Any] = [coordinatesKey: coordinateString , isVaccinationSiteKey: isVaccinationSite, waitTimeKey: locationWaitTime]
+        let infoDict: [String: Any] = [coordinatesKey: coordinateString , isVaccinationSiteKey: isVaccinationSite, waitTimeKey: locationWaitTime, availabilityKey: stuffAvailable]
         
         //Identifies the site based on its location. Replace periods with underscores to make the key valid.
         let siteIdentifier = coordinateString.replacingOccurrences(of: ".", with: "_")

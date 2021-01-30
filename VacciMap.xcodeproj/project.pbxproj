@@ -8,6 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		779920BD49FE28D24F4450F7 /* Pods_VacciMap.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 36AE0B54ED9ED0D4A2119DFA /* Pods_VacciMap.framework */; };
+		9A1BB1B825C5E485001A47D6 /* PinColorsDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A1BB1B725C5E485001A47D6 /* PinColorsDictionary.swift */; };
+		9A1BB1BB25C5F048001A47D6 /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A1BB1BA25C5F048001A47D6 /* LocationManager.swift */; };
+		9A1BB1D225C5F34F001A47D6 /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A1BB1D125C5F34F001A47D6 /* MapKit.framework */; };
+		9A1BB1E925C60803001A47D6 /* CommentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A1BB1E825C60803001A47D6 /* CommentsView.swift */; };
 		9A67444825C4FB2000BC3614 /* EditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A67444725C4FB2000BC3614 /* EditView.swift */; };
 		9A67444B25C4FD8D00BC3614 /* Results.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A67444A25C4FD8D00BC3614 /* Results.swift */; };
 		9A67444E25C500D800BC3614 /* MKPointAnnotation-Codable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A67444D25C500D800BC3614 /* MKPointAnnotation-Codable.swift */; };
@@ -25,6 +29,10 @@
 
 /* Begin PBXFileReference section */
 		36AE0B54ED9ED0D4A2119DFA /* Pods_VacciMap.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_VacciMap.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		9A1BB1B725C5E485001A47D6 /* PinColorsDictionary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinColorsDictionary.swift; sourceTree = "<group>"; };
+		9A1BB1BA25C5F048001A47D6 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
+		9A1BB1D125C5F34F001A47D6 /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
+		9A1BB1E825C60803001A47D6 /* CommentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommentsView.swift; sourceTree = "<group>"; };
 		9A67444725C4FB2000BC3614 /* EditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditView.swift; sourceTree = "<group>"; };
 		9A67444A25C4FD8D00BC3614 /* Results.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Results.swift; sourceTree = "<group>"; };
 		9A67444D25C500D800BC3614 /* MKPointAnnotation-Codable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MKPointAnnotation-Codable.swift"; sourceTree = "<group>"; };
@@ -52,6 +60,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9A1BB1D225C5F34F001A47D6 /* MapKit.framework in Frameworks */,
 				779920BD49FE28D24F4450F7 /* Pods_VacciMap.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -129,6 +138,8 @@
 				9A67444D25C500D800BC3614 /* MKPointAnnotation-Codable.swift */,
 				9A67446425C506B000BC3614 /* MiscellaneousExtensions.swift */,
 				9A67446725C5089100BC3614 /* AlertItem.swift */,
+				9A1BB1B725C5E485001A47D6 /* PinColorsDictionary.swift */,
+				9A1BB1BA25C5F048001A47D6 /* LocationManager.swift */,
 			);
 			path = "MapKit Stuff";
 			sourceTree = "<group>";
@@ -146,6 +157,7 @@
 			children = (
 				9AC2690125C4C24700B15AA3 /* ContentView.swift */,
 				9A67444725C4FB2000BC3614 /* EditView.swift */,
+				9A1BB1E825C60803001A47D6 /* CommentsView.swift */,
 			);
 			path = "Content Views";
 			sourceTree = "<group>";
@@ -153,6 +165,7 @@
 		FB791B27DB2DAF0B55CB204A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				9A1BB1D125C5F34F001A47D6 /* MapKit.framework */,
 				36AE0B54ED9ED0D4A2119DFA /* Pods_VacciMap.framework */,
 			);
 			name = Frameworks;
@@ -274,6 +287,7 @@
 			files = (
 				9AC2690225C4C24700B15AA3 /* ContentView.swift in Sources */,
 				9AC2692125C4E65400B15AA3 /* VacciMapApp.swift in Sources */,
+				9A1BB1B825C5E485001A47D6 /* PinColorsDictionary.swift in Sources */,
 				9A67444B25C4FD8D00BC3614 /* Results.swift in Sources */,
 				9A67446825C5089100BC3614 /* AlertItem.swift in Sources */,
 				9AC2695A25C4FAC000B15AA3 /* MKPointAnnotation-ObservableObject.swift in Sources */,
@@ -281,6 +295,8 @@
 				9A67444825C4FB2000BC3614 /* EditView.swift in Sources */,
 				9A67446525C506B000BC3614 /* MiscellaneousExtensions.swift in Sources */,
 				9A67444E25C500D800BC3614 /* MKPointAnnotation-Codable.swift in Sources */,
+				9A1BB1E925C60803001A47D6 /* CommentsView.swift in Sources */,
+				9A1BB1BB25C5F048001A47D6 /* LocationManager.swift in Sources */,
 				9AC2690025C4C24700B15AA3 /* VacciMapApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

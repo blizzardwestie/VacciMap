@@ -19,57 +19,80 @@ struct ContentView: View {
     ///Stores the currently-selected place
     @State private var selectedPlace: MKPointAnnotation?
     
-    ///Determines whether we are showing details for that place
-    @State private var showingPlaceDetails = false
+    ///Determine whether to show the sheet
+    @State private var showingDisplaySheet = false
     
-    ///Determine whether we are showing the screen to edit a location's details
-    @State private var showingEditScreen = false
+    ///Determine whether to show the action sheet
+    @State private var showingActionSheet = false
     
-    ///Determine whether ot enable editing the site, or only viewing nearby attractions
-    @State private var shouldEditSite = true
+    ///Determine which view to display in the sheet
+    @State private var sheetType: SheetType = .viewComments
+    
 
     ///Determines which alert to show
     @StateObject private var alertItem = AlertItem.sharedInstance
+    
+    ///Handles location services
+    let locationManager = LocationManager()
+    ///Determine when to show the map
+    @State private var showMap = false
+    
+    ///Determine my location to center the map to
+    @State private var coordinates: CLLocationCoordinate2D? = nil
+    
 
+    
     var body: some View {
         ZStack {
-            MapView(centerCoordinate: $centerCoordinate, selectedPlace: $selectedPlace, showingPlaceDetails: $showingPlaceDetails, annotations: locations)
-                .edgesIgnoringSafeArea(.all)
-            Image(systemName: "cross.circle")
-                .opacity(0.3)
-                .frame(width: 32, height: 32)
-            
-            VStack {
-                Spacer()
-                HStack {
+            if showMap {
+                MapView(centerCoordinate: $centerCoordinate, selectedPlace: $selectedPlace, showingPlaceDetails: $showingActionSheet, currentLocation: coordinates, annotations: locations)
+                    .edgesIgnoringSafeArea(.all)
+                Image(systemName: "cross.circle")
+                    .opacity(0.3)
+                    .frame(width: 32, height: 32)
+                
+                VStack {
                     Spacer()
-                    Button(action: {
-                        // create a new location
-                        let newLocation = CodableMKPointAnnotation()
-                        newLocation.coordinate = self.centerCoordinate
-                        self.locations.append(newLocation)
-                        newLocation.title = "Example location"
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            // create a new location. It will be added when the details are added to the database
+                            let newLocation = CodableMKPointAnnotation()
+                            newLocation.coordinate = self.centerCoordinate
 
-                        //show the edit screen when a new location is created
-                        self.selectedPlace = newLocation
-                        self.showingEditScreen = true
+                            //show the edit screen when a new location is created
+                            self.selectedPlace = newLocation
+                            sheetType = .editSite
+                            self.showingDisplaySheet = true
+                            
+                            //Append the new location. iOS will merge the duplicates so it'll be okay
+                            self.locations.append(newLocation)
 
-                    }) {
-                        Image(systemName: "plus")
-                            .padding()
-                            .background(Color.black.opacity(0.75))
-                            .foregroundColor(.white)
-                            .font(.title)
-                            .clipShape(Circle())
-                            .padding(.trailing)
+                        }) {
+                            Image(systemName: "plus")
+                                .padding()
+                                .background(Color.black.opacity(0.75))
+                                .foregroundColor(.white)
+                                .font(.title)
+                                .clipShape(Circle())
+                                .padding(.trailing)
+                                .padding(.bottom)
+                        }
                     }
                 }
+            } //end if showMap
+        } //end ZStack
+        .onReceive(locationManager.$lastLocation, perform: { newVal in
+            if let newCoordinate = newVal?.coordinate {
+                coordinates = newCoordinate
+                showMap = true
             }
-        }
-        .actionSheet(isPresented: $showingPlaceDetails, content: {
+        })
+        .actionSheet(isPresented: $showingActionSheet, content: {
             ActionSheet(title: Text("Location Options"), buttons: [
-                .default(Text("Nearby Attractions")){ showingEditScreen = true; shouldEditSite = false },
-                .default(Text("Edit Site")){ showingEditScreen = true; shouldEditSite = true },
+                .default(Text("View Comments")){ showingDisplaySheet = true; sheetType = .viewComments },
+                .default(Text("Edit Details/Add Comment")){ showingDisplaySheet = true; sheetType = .editSite },
+                .default(Text("Nearby Attractions")){ showingDisplaySheet = true; sheetType = .nearbyAttractions },
                 .destructive(Text("Delete Site")){
                     alertItem.alert = AlertItem(title: Text("Delete Location?"), optionalActionButton: .destructive(Text("Yes"), action: {
                         deleteLocation() //deletes the location from storage as well
@@ -89,9 +112,21 @@ struct ContentView: View {
             }
         })
         
-        .sheet(isPresented: $showingEditScreen, onDismiss: { shouldEditSite = true }) {
-            if self.selectedPlace != nil {
-                EditView(placemark: self.selectedPlace!, shouldEditSite: shouldEditSite)
+        .sheet(isPresented: $showingDisplaySheet) {
+            if sheetType == .editSite {
+                if self.selectedPlace != nil {
+                    EditView(placemark: self.selectedPlace!, shouldEditSite: true)
+                }
+            }
+            else if sheetType == .viewComments {
+                if self.selectedPlace != nil {
+                    CommentsView(isTestingSite: selectedPlace!.wrappedTitle == "Testing Site", siteID: selectedPlace!.identifierString().replacingOccurrences(of: ".", with: "_"))
+                }
+            }
+            else if sheetType == .nearbyAttractions {
+                if self.selectedPlace != nil {
+                    EditView(placemark: self.selectedPlace!, shouldEditSite: false)
+                }
             }
             
         }.onAppear(perform: loadData)
@@ -139,7 +174,7 @@ struct ContentView: View {
     
     ///Deletes a user's favorited location.
     func deleteLocation(){
-       do {
+       do { //don't need to worry about data saved on the device, since I'm only using the database
             //delete the location from the active list
             locations.deleteElement(selectedPlace as? CodableMKPointAnnotation)
             
@@ -154,8 +189,8 @@ struct ContentView: View {
         
         //Round latitude and longitude to the thousandth of a degree, since no two users will place the pin at exactly the same site.
         if selectedPlace == nil { return }
-        let latitude =  round(Double(selectedPlace!.coordinate.latitude)*1000)/1000
-        let longitude = round(Double(selectedPlace!.coordinate.longitude)*1000)/1000
+        let latitude =  Double(selectedPlace!.coordinate.latitude)
+        let longitude = Double(selectedPlace!.coordinate.longitude)
         
         //Upload to database as a string "SOME_LATITUDE SOME_LONGITUDE", so latitude is string.first and longitude is string.last
         let coordinateString = "\(latitude) \(longitude)"
@@ -165,7 +200,6 @@ struct ContentView: View {
         //Delete the site from the database
         //Determine which database key to use, depending on if we have a vaccination or testing site
         let childToDelete = selectedPlace!.wrappedTitle == "Vaccination Site" ? "Vaccination Sites" : "Testing Sites"
-        print("JOE BIDEN - child to delete is \(childToDelete), siteIdentifier is \(siteIdentifier), child key is \(siteDataKey)/\(coordinatesKey))")
         Database.database().reference().child(childToDelete).child(siteIdentifier).removeValue()
     }
     
@@ -200,11 +234,19 @@ struct ContentView: View {
                                 location.wrappedTitle = isVaccinationSite ? "Vaccination Site" : "Testing Site"
                             }
                             if let waitTime = value[waitTimeKey] as? String {
-                                location.wrappedSubtitle = waitTime + " minute wait"
+                                location.wrappedSubtitle = !waitTime.isEmpty ? waitTime + " minute wait" : "Unknown wait time"
                                 
                             }
                             
+                            //Don't forget to convert back to a boolean when setting the pin color
+                            if let testAvailable = value[availabilityKey] as? Bool {
+                                location.wrappedHint = testAvailable ? "true" : "false"
+                            }
+                            
                             locations.append(location) //add to the list
+                            PinColorsDictionary.shared.dictionary[location.identifierString()] = pinColor(locationType: location.wrappedTitle, availability: location.wrappedHint)
+                            print("Location added! List is \(locations)")
+                            print("BUDDY: location identifier is \(location.identifierString()), title is \(location.wrappedTitle), availability is \(location.wrappedHint), pin color = \(pinColor(locationType: location.wrappedTitle, availability: location.wrappedHint))")
                         }
                         
                         
@@ -238,12 +280,19 @@ struct ContentView: View {
                                 location.wrappedTitle = isVaccinationSite ? "Vaccination Site" : "Testing Site"
                             }
                             if let waitTime = value[waitTimeKey] as? String {
-                                location.wrappedSubtitle = waitTime + " minute wait"
+                                location.wrappedSubtitle = !waitTime.isEmpty ? waitTime + " minute wait" : "Unknown wait time"
+                            }
+                            
+                            //Don't forget to convert back to a boolean when setting the pin color
+                            if let testAvailable = value[availabilityKey] as? Bool {
+                                location.wrappedHint = testAvailable ? "true" : "false"
                             }
                             
                             //delete the old value, then add the new one
                             locations.deleteElement(location)
                             locations.append(location)
+                            PinColorsDictionary.shared.dictionary[location.identifierString()] = pinColor(locationType: location.wrappedTitle, availability: location.wrappedHint)
+                            print("Location changed! List is \(locations)")
                         }
                         
                         
@@ -278,12 +327,18 @@ struct ContentView: View {
                                location.wrappedTitle = isVaccinationSite ? "Vaccination Site" : "Testing Site"
                            }
                            if let waitTime = value[waitTimeKey] as? String {
-                                location.wrappedSubtitle = waitTime + " minute wait"
-                            
+                            location.wrappedSubtitle = !waitTime.isEmpty ? waitTime + " minute wait" : "Unknown wait time"
+
                            }
-                           
+
+                            //Don't forget to convert back to a boolean when setting the pin color
+                            if let testAvailable = value[availabilityKey] as? Bool {
+                                location.wrappedHint = testAvailable ? "true" : "false"
+                            }
                         
-                           locations.deleteElement(location) //delete the data
+                            print("Trying to delete location at \(location.coordinate)")
+                            PinColorsDictionary.shared.dictionary.removeValue(forKey: location.identifierString())
+                            locations.deleteElement(location) //delete the data
                        }
                        
                        break //stop the loop since we've found the right key
@@ -298,4 +353,9 @@ struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
     }
+}
+
+///An enum containing views that the sheet might display
+enum SheetType {
+    case editSite, viewComments, nearbyAttractions
 }

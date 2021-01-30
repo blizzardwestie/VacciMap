@@ -10,7 +10,7 @@ import MapKit
 
 class CodableMKPointAnnotation: MKPointAnnotation, Codable {
     enum CodingKeys: CodingKey {
-        case title, subtitle, latitude, longitude
+        case title, subtitle, latitude, longitude, accessibilityHint
     }
 
     override init() {
@@ -23,6 +23,7 @@ class CodableMKPointAnnotation: MKPointAnnotation, Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         title = try container.decode(String.self, forKey: .title)
         subtitle = try container.decode(String.self, forKey: .subtitle)
+        accessibilityHint = try container.decode(String.self, forKey: .accessibilityHint)
 
         let latitude = try container.decode(CLLocationDegrees.self, forKey: .latitude)
         let longitude = try container.decode(CLLocationDegrees.self, forKey: .longitude)
@@ -35,5 +36,6 @@ class CodableMKPointAnnotation: MKPointAnnotation, Codable {
         try container.encode(subtitle, forKey: .subtitle)
         try container.encode(coordinate.latitude, forKey: .latitude)
         try container.encode(coordinate.longitude, forKey: .longitude)
+        try container.encode(accessibilityHint, forKey: .accessibilityHint)
     }
 }

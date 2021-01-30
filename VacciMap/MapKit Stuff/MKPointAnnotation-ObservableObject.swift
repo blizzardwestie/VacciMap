@@ -28,4 +28,14 @@ extension MKPointAnnotation: ObservableObject {
             subtitle = newValue
         }
     }
+    
+    ///Use this to store the test/vaccine availability boolean as a string
+    public var wrappedHint: String {
+        get {
+            self.accessibilityHint ?? ""
+        }
+        set {
+            accessibilityHint = newValue
+        }
+    }
 }
