@@ -39,8 +39,9 @@ struct ContentView: View {
     
     ///Determine my location to center the map to
     @State private var coordinates: CLLocationCoordinate2D? = nil
-    
 
+    ///Equal to "tutorial"; used to see if I read the tutorial
+    let tutorialKey = "tutorial"
     
     var body: some View {
         ZStack {
@@ -112,7 +113,11 @@ struct ContentView: View {
             }
         })
         
-        .sheet(isPresented: $showingDisplaySheet) {
+        .sheet(isPresented: $showingDisplaySheet, onDismiss: {
+            if sheetType == .tutorial {
+                UserDefaults.standard.set(true, forKey: tutorialKey) //mark that I read the tutorial so I don't show it again
+            }
+        }) {
             if sheetType == .editSite {
                 if self.selectedPlace != nil {
                     EditView(placemark: self.selectedPlace!, shouldEditSite: true)
@@ -127,6 +132,9 @@ struct ContentView: View {
                 if self.selectedPlace != nil {
                     EditView(placemark: self.selectedPlace!, shouldEditSite: false)
                 }
+            }
+            else if sheetType == .tutorial {
+                Tutorial()
             }
             
         }.onAppear(perform: loadData)
@@ -158,6 +166,12 @@ struct ContentView: View {
         
         listenForDataAddedChangedRemoved(reference: testingSitesRef)
         listenForDataAddedChangedRemoved(reference: vaccinationSitesRef)
+        
+        let didReadTutorial = UserDefaults.standard.bool(forKey: tutorialKey)
+        if !didReadTutorial { //show the tutorial the first time the app opens
+            sheetType = .tutorial
+            showingDisplaySheet = true
+        }
 
     }
     
@@ -357,5 +371,5 @@ struct ContentView_Previews: PreviewProvider {
 
 ///An enum containing views that the sheet might display
 enum SheetType {
-    case editSite, viewComments, nearbyAttractions
+    case editSite, viewComments, nearbyAttractions, tutorial
 }
