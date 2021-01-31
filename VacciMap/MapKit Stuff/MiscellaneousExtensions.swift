@@ -10,6 +10,7 @@ import SwiftUI
 import MapKit
 
 extension Array where Element == CodableMKPointAnnotation {
+    ///Delete all elements at a specified coordinate
     mutating func deleteElement(_ element: Element?){
         guard let element = element else { return }
         for index in 0..<self.count {
@@ -18,7 +19,6 @@ extension Array where Element == CodableMKPointAnnotation {
             if self[index].coordinate.latitude == element.coordinate.latitude && self[index].coordinate.longitude == element.coordinate.longitude {
                 self.remove(at: index)
                 print("Deleted location at index \(index)")
-                return //exit once the element is removed
             }
         }
     }
