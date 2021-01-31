@@ -20,6 +20,7 @@ struct ContentView: View {
             newValue.forEach { coordinate, location in
                 locations.append(location)
             }
+            print("JOE BIDEN = \(locations.last?.coordinate)")
         }
     }
     
@@ -182,8 +183,10 @@ struct ContentView: View {
         testingSitesRef.removeAllObservers() //avoid duplication
         vaccinationSitesRef.removeAllObservers()
         
-        listenForDataAddedChangedRemoved(reference: testingSitesRef)
-        listenForDataAddedChangedRemoved(reference: vaccinationSitesRef)
+       // listenForDataAddedChangedRemoved(reference: testingSitesRef)
+       // listenForDataAddedChangedRemoved(reference: vaccinationSitesRef)
+        observeValueChanged(reference: testingSitesRef)
+        observeValueChanged(reference: vaccinationSitesRef)
         
         let didReadTutorial = UserDefaults.standard.bool(forKey: tutorialKey)
         if !didReadTutorial { //show the tutorial the first time the app opens
@@ -235,20 +238,22 @@ struct ContentView: View {
         Database.database().reference().child(childToDelete).child(siteIdentifier).removeValue()
     }
     
-    ///Call this when the view appears to observe both test and vaccination site data
+    ///Call this when the view appears to observe both test and vaccination site data. I can't use this right now though because it has issues.
     private func listenForDataAddedChangedRemoved(reference: DatabaseReference){
         observeDataAdded(reference: reference)
         observeDataChanged(reference: reference)
         observeDataRemoved(reference: reference)
     }
     
-    ///Listens for data added. Never called separately.
-    private func observeDataAdded(reference: DatabaseReference){
-        reference.observe(.childAdded, with: { snapshot in
+    
+    ///Value listener isn't ideal compared to child listener, but at least this works.
+    private func observeValueChanged(reference: DatabaseReference){
+        reference.observe(.value){ snapshot in
+            locationsDict = [:] //clear the dictionary, then rebuild it
             for child in snapshot.children {
                 if let childSnapshot = child as? DataSnapshot {
-                    if childSnapshot.key == siteDataKey {
-                        if let value = childSnapshot.value as? [String: Any]{
+                    childSnapshot.ref.child(siteDataKey).observeSingleEvent(of: .value){ siteDataSnapshot in
+                        if let value = siteDataSnapshot.value as? [String: Any]{
                             let location = CodableMKPointAnnotation()
                             if let coordinates = value[coordinatesKey] as? String {
                                 if let latitude = coordinates.split(separator: " ").first {
@@ -284,63 +289,102 @@ struct ContentView: View {
                             if let coordinates = value[coordinatesKey] as? String { locationsDict[coordinates] = location }
                             PinColorsDictionary.shared.dictionary[location.identifierString()] = pinColor(locationType: location.wrappedTitle, availability: location.wrappedHint)
                             print("Location added at \(location.coordinate)")
-                        
-                        }
-                        
-                        
-                        break //stop the loop since we've found the right key
                     }
                 }
+            }
+        }
+    }
+    }
+    
+    ///Listens for data added. Never called separately.
+    private func observeDataAdded(reference: DatabaseReference){
+        reference.observe(.childAdded, with: { snapshot in
+            snapshot.ref.child(siteDataKey).observeSingleEvent(of: .value){ childSnapshot in
+                if let value = childSnapshot.value as? [String: Any]{
+                    let location = CodableMKPointAnnotation()
+                    if let coordinates = value[coordinatesKey] as? String {
+                        if let latitude = coordinates.split(separator: " ").first {
+                            if let latitude = Double(latitude) {
+                                location.coordinate.latitude = latitude
+                            }
+                        }
+                        if let longitude = coordinates.split(separator:" ").last {
+                            if let longitude = Double(longitude) {
+                                location.coordinate.longitude = longitude
+                            }
+                        }
+                    }
+                    if let isVaccinationSite = value[isVaccinationSiteKey] as? Bool {
+                        location.wrappedTitle = isVaccinationSite ? "Vaccination Site" : "Testing Site"
+                    }
+                    if let waitTime = value[waitTimeKey] as? String {
+                        location.wrappedSubtitle = !waitTime.isEmpty ? waitTime + " minute wait" : "Unknown wait time"
+                        
+                    }
+                    
+                    //Don't forget to convert back to a boolean when setting the pin color
+                    if let testAvailable = value[availabilityKey] as? Bool {
+                        location.wrappedHint = testAvailable ? "true" : "false"
+                    }
+                    
+                    //Change the title if there are no doses or tests available
+                    if location.wrappedHint == "false" {
+                        location.wrappedTitle = location.wrappedTitle == "Testing Site" ? "No Tests Available" : "No Vaccines Available"
+                    }
+                    
+                    //update my locations
+                    if let coordinates = value[coordinatesKey] as? String { locationsDict[coordinates] = location }
+                    PinColorsDictionary.shared.dictionary[location.identifierString()] = pinColor(locationType: location.wrappedTitle, availability: location.wrappedHint)
+                    print("Location added at \(location.coordinate)")
+                
+                }
+                
             }
         })
     }
     ///Listens for data changed. Never called separately.
     private func observeDataChanged(reference: DatabaseReference){
         reference.observe(.childChanged, with: { snapshot in
-            for child in snapshot.children {
-                if let childSnapshot = child as? DataSnapshot {
-                    if childSnapshot.key == siteDataKey {
-                        if let value = childSnapshot.value as? [String: Any]{
-                            let location = CodableMKPointAnnotation()
-                            if let coordinates = value[coordinatesKey] as? String {
-                                if let latitude = coordinates.split(separator: " ").first {
-                                    if let latitude = Double(latitude) {
-                                        location.coordinate.latitude = latitude
-                                    }
-                                }
-                                if let longitude = coordinates.split(separator:" ").last {
-                                    if let longitude = Double(longitude) {
-                                        location.coordinate.longitude = longitude
-                                    }
-                                }
+            snapshot.ref.child(siteDataKey).observeSingleEvent(of: .value){ childSnapshot in
+                if let value = childSnapshot.value as? [String: Any]{
+                    let location = CodableMKPointAnnotation()
+                    if let coordinates = value[coordinatesKey] as? String {
+                        if let latitude = coordinates.split(separator: " ").first {
+                            if let latitude = Double(latitude) {
+                                location.coordinate.latitude = latitude
                             }
-                            if let isVaccinationSite = value[isVaccinationSiteKey] as? Bool {
-                                location.wrappedTitle = isVaccinationSite ? "Vaccination Site" : "Testing Site"
-                            }
-                            if let waitTime = value[waitTimeKey] as? String {
-                                location.wrappedSubtitle = !waitTime.isEmpty ? waitTime + " minute wait" : "Unknown wait time"
-                            }
-                            
-                            //Don't forget to convert back to a boolean when setting the pin color
-                            if let testAvailable = value[availabilityKey] as? Bool {
-                                location.wrappedHint = testAvailable ? "true" : "false"
-                            }
-                            
-                            //Change the title if there are no doses or tests available
-                            if location.wrappedHint == "false" {
-                                location.wrappedTitle = location.wrappedTitle == "Testing Site" ? "No Tests Available" : "No Vaccines Available"
-                            }
-                            
-                            //update my locations
-                            if let coordinates = value[coordinatesKey] as? String { locationsDict[coordinates] = location }
-                            PinColorsDictionary.shared.dictionary[location.identifierString()] = pinColor(locationType: location.wrappedTitle, availability: location.wrappedHint)
-                            print("Location changed at \(location.coordinate)")
                         }
-                        
-                        
-                        break //stop the loop since we've found the right key
+                        if let longitude = coordinates.split(separator:" ").last {
+                            if let longitude = Double(longitude) {
+                                location.coordinate.longitude = longitude
+                            }
+                        }
                     }
+                    if let isVaccinationSite = value[isVaccinationSiteKey] as? Bool {
+                        location.wrappedTitle = isVaccinationSite ? "Vaccination Site" : "Testing Site"
+                    }
+                    if let waitTime = value[waitTimeKey] as? String {
+                        location.wrappedSubtitle = !waitTime.isEmpty ? waitTime + " minute wait" : "Unknown wait time"
+                        
+                    }
+                    
+                    //Don't forget to convert back to a boolean when setting the pin color
+                    if let testAvailable = value[availabilityKey] as? Bool {
+                        location.wrappedHint = testAvailable ? "true" : "false"
+                    }
+                    
+                    //Change the title if there are no doses or tests available
+                    if location.wrappedHint == "false" {
+                        location.wrappedTitle = location.wrappedTitle == "Testing Site" ? "No Tests Available" : "No Vaccines Available"
+                    }
+                    
+                    //update my locations
+                    if let coordinates = value[coordinatesKey] as? String { locationsDict[coordinates] = location }
+                    PinColorsDictionary.shared.dictionary[location.identifierString()] = pinColor(locationType: location.wrappedTitle, availability: location.wrappedHint)
+                    print("Location added at \(location.coordinate)")
+                
                 }
+                
             }
         })
     }
