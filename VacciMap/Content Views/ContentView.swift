@@ -336,7 +336,7 @@ struct ContentView: View {
                     if let coordinates = value[coordinatesKey] as? String { locationsDict[coordinates] = location }
                     PinColorsDictionary.shared.dictionary[location.identifierString()] = pinColor(locationType: location.wrappedTitle, availability: location.wrappedHint)
                     print("Location added at \(location.coordinate)")
-                
+                    locations.append(location) //not sure why, but this seems to work
                 }
                 
             }

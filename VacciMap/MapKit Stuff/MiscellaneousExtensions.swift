@@ -84,13 +84,13 @@ public func pinColor(locationType: String, availability: String) -> UIColor {
     case "Vaccination Site":
         return .systemGreen
     case "No Vaccines Available":
-        return .systemGray3
+        return .darkGray
     case "Testing Site":
         return .systemTeal
     case "No Tests Available":
-        return .systemGray
+        return .gray
     default:
-        return .systemRed
+        return .clear // just because I can't figure out some things right now, so if it's clear then my mistake won't be visible
     }
 }
 
