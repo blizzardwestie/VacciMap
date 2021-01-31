@@ -76,8 +76,8 @@ struct ContentView: View {
                             sheetType = .editSite
                             self.showingDisplaySheet = true
                             
-                            //Append the new location. iOS will merge the duplicates so it'll be okay
-                            locationsDict[newLocation.identifierString()] = newLocation
+                            //Append the new location, though this will be cleared momentarily once the database is updated.
+                            locations.append(newLocation)
 
                         }) {
                             Image(systemName: "plus")
