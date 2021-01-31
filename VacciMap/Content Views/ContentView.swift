@@ -104,7 +104,7 @@ struct ContentView: View {
                 .default(Text("Nearby Attractions")){ showingDisplaySheet = true; sheetType = .nearbyAttractions },
                 .destructive(Text("Delete Site")){
                     alertItem.alert = AlertItem(title: Text("Delete Location?"), optionalActionButton: .destructive(Text("Yes"), action: {
-                        deleteLocation() //deletes the location from storage as well
+                        deleteLocation() //deletes the location from the database
 
                     }), secondaryOrDismissButton: .cancel())
                 },
@@ -221,7 +221,7 @@ struct ContentView: View {
         
         //Delete the site from the database
         //Determine which database key to use, depending on if we have a vaccination or testing site
-        let childToDelete = selectedPlace!.wrappedTitle == "Vaccination Site" ? "Vaccination Sites" : "Testing Sites"
+        let childToDelete = selectedPlace!.wrappedTitle == "Vaccination Site" || selectedPlace!.wrappedTitle == "No Vaccines Available" ? "Vaccination Sites" : "Testing Sites"
         Database.database().reference().child(childToDelete).child(siteIdentifier).removeValue()
     }
     
@@ -272,8 +272,8 @@ struct ContentView: View {
                             
                             locations.append(location) //add to the list
                             PinColorsDictionary.shared.dictionary[location.identifierString()] = pinColor(locationType: location.wrappedTitle, availability: location.wrappedHint)
-                            print("Location added! List is \(locations)")
-                            print("BUDDY: location identifier is \(location.identifierString()), title is \(location.wrappedTitle), availability is \(location.wrappedHint), pin color = \(pinColor(locationType: location.wrappedTitle, availability: location.wrappedHint))")
+                            print("Location added at \(location.coordinate)")
+                        
                         }
                         
                         
@@ -324,7 +324,7 @@ struct ContentView: View {
                             locations.deleteElement(location)
                             locations.append(location)
                             PinColorsDictionary.shared.dictionary[location.identifierString()] = pinColor(locationType: location.wrappedTitle, availability: location.wrappedHint)
-                            print("Location changed! List is \(locations)")
+                            print("Location changed at \(location.coordinate)")
                         }
                         
                         
