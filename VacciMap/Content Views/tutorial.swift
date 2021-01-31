@@ -25,6 +25,7 @@ struct Tutorial: UIViewControllerRepresentable {
             WhatsNew.Item(title: "Testing Available", subtitle: "Look for a teal pin", image: UIImage(systemName: "hand.point.right")),
             WhatsNew.Item(title: "Out of Doses", subtitle: "Sites that have run out of vaccine doses will appear dark gray", image: UIImage(systemName: "hand.point.right")),
             WhatsNew.Item(title: "Out of Tests", subtitle: "Sites that have run out of tests will appear gray", image: UIImage(systemName: "hand.point.right")),
+            WhatsNew.Item(title: "Add a Site", subtitle: "Line up the location with the target, and tap the Plus button in the bottom right corner", image: UIImage(systemName: "cross.circle")),
         ])
         
         //initialize WhatsNewViewController with the above settings
