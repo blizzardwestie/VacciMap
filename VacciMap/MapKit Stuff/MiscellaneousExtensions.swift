@@ -10,17 +10,21 @@ import SwiftUI
 import MapKit
 
 extension Array where Element == CodableMKPointAnnotation {
-    ///Delete all elements at a specified coordinate
-    mutating func deleteElement(_ element: Element?){
-        guard let element = element else { return }
-        for index in 0..<self.count {
-            if index >= self.count { return } //check to avoid going out of range
-            print("Attempting to delete location at index \(index)")
-            if self[index].coordinate.latitude == element.coordinate.latitude && self[index].coordinate.longitude == element.coordinate.longitude {
-                self.remove(at: index)
-                print("Deleted location at index \(index)")
+    private func elementDeleted(_ element: Element?) -> [Element]{
+        guard let element = element else { return self}
+        var arrayToReturn = [Element]()
+        for item in self {
+            //if the element isn't already in the arrayt to return, and the element is not the one we want to remove
+            if !arrayToReturn.containsLocation(location: item) && !(item.coordinate.latitude == element.coordinate.latitude && item.coordinate.longitude == element.coordinate.longitude) {
+                arrayToReturn.append(item)
             }
         }
+        return arrayToReturn
+    }
+    
+    ///Delete all elements at a specified coordinate
+    mutating func deleteElement(_ element: Element?){
+        self = self.elementDeleted(element)
     }
     
     ///Determine whether a list of point annotations contains a given annotation.

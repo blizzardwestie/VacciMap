@@ -270,7 +270,9 @@ struct ContentView: View {
                                 location.wrappedTitle = location.wrappedTitle == "Testing Site" ? "No Tests Available" : "No Vaccines Available"
                             }
                             
-                            locations.append(location) //add to the list
+                            self.locations.append(location) //add to the list
+                            self.locations.deleteElement(location)
+                            self.locations.append(location)
                             PinColorsDictionary.shared.dictionary[location.identifierString()] = pinColor(locationType: location.wrappedTitle, availability: location.wrappedHint)
                             print("Location added at \(location.coordinate)")
                         
