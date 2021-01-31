@@ -20,7 +20,6 @@ struct ContentView: View {
             newValue.forEach { coordinate, location in
                 locations.append(location)
             }
-            print("JOE BIDEN = \(locations.last?.coordinate)")
         }
     }
     
@@ -136,6 +135,7 @@ struct ContentView: View {
             if sheetType == .tutorial {
                 UserDefaults.standard.set(true, forKey: tutorialKey) //mark that I read the tutorial so I don't show it again
             }
+            loadData() //reset the data
         }) {
             if sheetType == .editSite {
                 if self.selectedPlace != nil {
@@ -168,6 +168,7 @@ struct ContentView: View {
     
     ///Loads saved data from the file system
     func loadData() {
+        locationsDict = [:]
          /*let filename = getDocumentsDirectory().appendingPathComponent("SavedPlaces")
 
         do {
@@ -183,10 +184,10 @@ struct ContentView: View {
         testingSitesRef.removeAllObservers() //avoid duplication
         vaccinationSitesRef.removeAllObservers()
         
-       // listenForDataAddedChangedRemoved(reference: testingSitesRef)
-       // listenForDataAddedChangedRemoved(reference: vaccinationSitesRef)
-        observeValueChanged(reference: testingSitesRef)
-        observeValueChanged(reference: vaccinationSitesRef)
+        listenForDataAddedChangedRemoved(reference: testingSitesRef)
+        listenForDataAddedChangedRemoved(reference: vaccinationSitesRef)
+        //observeValueChanged(reference: testingSitesRef)
+        //observeValueChanged(reference: vaccinationSitesRef)
         
         let didReadTutorial = UserDefaults.standard.bool(forKey: tutorialKey)
         if !didReadTutorial { //show the tutorial the first time the app opens
@@ -209,7 +210,7 @@ struct ContentView: View {
     
     ///Deletes a user's favorited location.
     func deleteLocation(){
-       do { //don't need to worry about data saved on the device, since I'm only using the database
+      /* do { //don't need to worry about data saved on the device, since I'm only using the database
             //delete the location from the active list
             locations.deleteElement(selectedPlace as? CodableMKPointAnnotation)
             
@@ -220,7 +221,7 @@ struct ContentView: View {
             //saveData() //save the new list
         } catch {
             print("Unable to delete data.")
-        }
+        } */
         
         //Round latitude and longitude to the thousandth of a degree, since no two users will place the pin at exactly the same site.
         if selectedPlace == nil { return }
@@ -249,7 +250,6 @@ struct ContentView: View {
     ///Value listener isn't ideal compared to child listener, but at least this works.
     private func observeValueChanged(reference: DatabaseReference){
         reference.observe(.value){ snapshot in
-            locationsDict = [:] //clear the dictionary, then rebuild it
             for child in snapshot.children {
                 if let childSnapshot = child as? DataSnapshot {
                     childSnapshot.ref.child(siteDataKey).observeSingleEvent(of: .value){ siteDataSnapshot in
