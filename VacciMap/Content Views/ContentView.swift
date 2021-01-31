@@ -14,7 +14,7 @@ struct ContentView: View {
     @State private var centerCoordinate = CLLocationCoordinate2D()
     
     ///Do a refreshing dictionary to make this easier
-    @State private var locationsDict: [String: CodableMKPointAnnotation]{
+    @State private var locationsDict: [String: CodableMKPointAnnotation] = [:] {
         willSet {
             locations = []
             newValue.forEach { coordinate, location in
@@ -77,7 +77,7 @@ struct ContentView: View {
                             self.showingDisplaySheet = true
                             
                             //Append the new location. iOS will merge the duplicates so it'll be okay
-                            locationsDict[newLocation.coordinate] = newLocation
+                            locationsDict[newLocation.identifierString()] = newLocation
 
                         }) {
                             Image(systemName: "plus")
