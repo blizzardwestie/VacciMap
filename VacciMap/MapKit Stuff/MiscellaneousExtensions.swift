@@ -74,18 +74,17 @@ extension Int {
 }
 
 
-///Returns the appropriate pin color based on whether the site is a testing or vaccination site and whether there are test/vaccines available. Available vaccines are bright green, available tests are dark green, unavailable vaccines are gray, and unavailable tests are dark gray.
+///Returns the appropriate pin color based on whether the site is a testing or vaccination site and whether there are test/vaccines available. Available vaccines are green, available tests are teal, unavailable vaccines are dark gray, and unavailable tests are light gray.
 public func pinColor(locationType: String, availability: String) -> UIColor {
-    let isAvailable = availability == "true" ? true : false //convert the string to a boolean
-    let darkGreen = UIColor(red: 0, green: 1, blue: 0, alpha: 1)
-    let lightGreen = UIColor(red: 0.4, green: 0.7, blue: 0.3, alpha: 1)
     switch locationType{
     case "Vaccination Site":
-        if isAvailable { return darkGreen }
-        else { return .gray }
+        return .systemGreen
+    case "No Vaccines Available":
+        return .systemGray3
     case "Testing Site":
-        if isAvailable { return lightGreen }
-        else { return .darkGray }
+        return .systemTeal
+    case "No Tests Available":
+        return .systemGray
     default:
         return .systemRed
     }

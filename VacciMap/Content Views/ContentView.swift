@@ -85,12 +85,20 @@ struct ContentView: View {
         } //end ZStack
         .onReceive(locationManager.$lastLocation, perform: { newVal in
             if let newCoordinate = newVal?.coordinate {
-                coordinates = newCoordinate
-                showMap = true
+                if coordinates == nil { //only update the coordinates the first time, when they are nil
+                    coordinates = newCoordinate
+                    showMap = true
+                }
             }
         })
         .actionSheet(isPresented: $showingActionSheet, content: {
             ActionSheet(title: Text("Location Options"), buttons: [
+                .default(Text("Directions")){
+                    if selectedPlace != nil {
+                        openMapsAppWithDirections(to: selectedPlace!.coordinate, destinationName: selectedPlace!.wrappedTitle)
+                    }
+                    
+                },
                 .default(Text("View Comments")){ showingDisplaySheet = true; sheetType = .viewComments },
                 .default(Text("Edit Details/Add Comment")){ showingDisplaySheet = true; sheetType = .editSite },
                 .default(Text("Nearby Attractions")){ showingDisplaySheet = true; sheetType = .nearbyAttractions },
@@ -257,6 +265,11 @@ struct ContentView: View {
                                 location.wrappedHint = testAvailable ? "true" : "false"
                             }
                             
+                            //Change the title if there are no doses or tests available
+                            if location.wrappedHint == "false" {
+                                location.wrappedTitle = location.wrappedTitle == "Testing Site" ? "No Tests Available" : "No Vaccines Available"
+                            }
+                            
                             locations.append(location) //add to the list
                             PinColorsDictionary.shared.dictionary[location.identifierString()] = pinColor(locationType: location.wrappedTitle, availability: location.wrappedHint)
                             print("Location added! List is \(locations)")
@@ -300,6 +313,11 @@ struct ContentView: View {
                             //Don't forget to convert back to a boolean when setting the pin color
                             if let testAvailable = value[availabilityKey] as? Bool {
                                 location.wrappedHint = testAvailable ? "true" : "false"
+                            }
+                            
+                            //Change the title if there are no doses or tests available
+                            if location.wrappedHint == "false" {
+                                location.wrappedTitle = location.wrappedTitle == "Testing Site" ? "No Tests Available" : "No Vaccines Available"
                             }
                             
                             //delete the old value, then add the new one
@@ -350,6 +368,11 @@ struct ContentView: View {
                                 location.wrappedHint = testAvailable ? "true" : "false"
                             }
                         
+                            //Change the title if there are no doses or tests available
+                            if location.wrappedHint == "false" {
+                                location.wrappedTitle = location.wrappedTitle == "Testing Site" ? "No Tests Available" : "No Vaccines Available"
+                            }
+                        
                             print("Trying to delete location at \(location.coordinate)")
                             PinColorsDictionary.shared.dictionary.removeValue(forKey: location.identifierString())
                             locations.deleteElement(location) //delete the data
@@ -360,6 +383,15 @@ struct ContentView: View {
                }
            }
        }
+    }
+    
+    ///Opens a location in Apple Maps
+    func openMapsAppWithDirections(to coordinate: CLLocationCoordinate2D, destinationName name: String) {
+        let options = [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving]
+        let placemark = MKPlacemark(coordinate: coordinate, addressDictionary: nil)
+        let mapItem = MKMapItem(placemark: placemark)
+        mapItem.name = name // Provide the name of the destination in the To: field
+        mapItem.openInMaps(launchOptions: options)
     }
 }
 
