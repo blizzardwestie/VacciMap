@@ -13,6 +13,16 @@ struct ContentView: View {
     ///Tracks the center coordinate on the map
     @State private var centerCoordinate = CLLocationCoordinate2D()
     
+    ///Do a refreshing dictionary to make this easier
+    @State private var locationsDict: [String: CodableMKPointAnnotation]{
+        willSet {
+            locations = []
+            newValue.forEach { coordinate, location in
+                locations.append(location)
+            }
+        }
+    }
+    
     ///An array of locations to be passed to the map
     @State private var locations = [CodableMKPointAnnotation]()
 
@@ -67,7 +77,7 @@ struct ContentView: View {
                             self.showingDisplaySheet = true
                             
                             //Append the new location. iOS will merge the duplicates so it'll be okay
-                            self.locations.append(newLocation)
+                            locationsDict[newLocation.coordinate] = newLocation
 
                         }) {
                             Image(systemName: "plus")
@@ -270,9 +280,8 @@ struct ContentView: View {
                                 location.wrappedTitle = location.wrappedTitle == "Testing Site" ? "No Tests Available" : "No Vaccines Available"
                             }
                             
-                            self.locations.append(location) //add to the list
-                            self.locations.deleteElement(location)
-                            self.locations.append(location)
+                            //update my locations
+                            if let coordinates = value[coordinatesKey] as? String { locationsDict[coordinates] = location }
                             PinColorsDictionary.shared.dictionary[location.identifierString()] = pinColor(locationType: location.wrappedTitle, availability: location.wrappedHint)
                             print("Location added at \(location.coordinate)")
                         
@@ -322,9 +331,8 @@ struct ContentView: View {
                                 location.wrappedTitle = location.wrappedTitle == "Testing Site" ? "No Tests Available" : "No Vaccines Available"
                             }
                             
-                            //delete the old value, then add the new one
-                            locations.deleteElement(location)
-                            locations.append(location)
+                            //update my locations
+                            if let coordinates = value[coordinatesKey] as? String { locationsDict[coordinates] = location }
                             PinColorsDictionary.shared.dictionary[location.identifierString()] = pinColor(locationType: location.wrappedTitle, availability: location.wrappedHint)
                             print("Location changed at \(location.coordinate)")
                         }
@@ -377,7 +385,7 @@ struct ContentView: View {
                         
                             print("Trying to delete location at \(location.coordinate)")
                             PinColorsDictionary.shared.dictionary.removeValue(forKey: location.identifierString())
-                            locations.deleteElement(location) //delete the data
+                            if let coordinates = value[coordinatesKey] as? String { locationsDict.removeValue(forKey: coordinates) }
                        }
                        
                        break //stop the loop since we've found the right key
